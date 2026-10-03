@@ -1,4 +1,6 @@
-random
 psutil
 json
 datetime
+platform
+subprocess
+random
