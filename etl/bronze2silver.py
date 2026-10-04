@@ -58,8 +58,11 @@ def __init__():
     if date not in dates:
       dates.append(date)
 
-  old_bytes_access_point = 0
-  old_bytes_firewall = 0
+  if len(files_to_transform) <= 1:
+    return print("Não há dados a serem transformados.")
+  
+  old_bytes_access_point = None
+  old_bytes_firewall = None
 
   for date in dates:
     bytes_access_point = 0
@@ -69,9 +72,9 @@ def __init__():
     files_to_read = [
       file 
       for file in files_to_transform 
-      if file_name.split("_")[0] + " " + file_name.split("_")[1].replace("-", ":") == date
+      if file.split("_")[0] + " " + file.split("_")[1].replace("-", ":") == date
     ]
-
+    
     for file_name in files_to_read:
       type = getDeviceType(file_name)
 
@@ -92,18 +95,24 @@ def __init__():
     if load_status == "":
       load_status = "NA"
     else:
-      load_status = str(list(set(load_status.split(",")))).replace("[", "").replace("]", "").replace("'", "").replace(" ", "")[1:]
+      list_status = list(set(load_status.split(",")))
+      list_status.sort()
+      load_status = str(list_status).replace("[", "").replace("]", "").replace("'", "").replace(" ", "")
+      load_status = load_status if load_status == "NA" else load_status[1:]
 
-    diff_access_point = bytes_access_point - old_bytes_access_point
-    diff_firewall = bytes_firewall - old_bytes_firewall
-
-    mbps_access_point = diff_access_point * 8 / 1_000_000 / 60
-    mbps_firewall = diff_firewall * 8 / 1_000_000 / 60
-
+    mbps_access_point = 0
+    mbps_firewall = 0
     consistency = 0
+    if old_bytes_access_point is not None:
+      diff_access_point = bytes_access_point - old_bytes_access_point
+      diff_firewall = bytes_firewall - old_bytes_firewall
 
-    if diff_firewall != 0:
-      consistency = (diff_access_point / diff_firewall) * 100
+      mbps_access_point = diff_access_point * 8 / 1_000_000 / 60
+      mbps_firewall = diff_firewall * 8 / 1_000_000 / 60
+
+
+      if diff_firewall != 0:
+        consistency = (diff_access_point / diff_firewall) * 100
 
     csv_rows.append([
       date,
@@ -144,12 +153,11 @@ def getLoadStatus (data):
   return status
 
 def getDeviceType (file_name: str):
-  if file_name.split("_")[2][0] == "a":
+  device = file_name.split("_")[2]
+  if device.startswith("ap"):
     return "ACCESS_POINT"
-   
-  if file_name.split("_")[2][0] == "f":
+  if device.startswith("wirewall") or device.startswith("firewall"):
     return "FIREWALL"
-
   return None
 
 __init__()
