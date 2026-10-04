@@ -65,6 +65,6 @@ def __init__():
   with open(file_name, "w") as file:
     json.dump(data, file, indent=2)
   
-    s3_client.upload_file(file_name, BUCKET_NAME, f"01-bronze/{date}_{AP_ID.lower()}.json")
+  s3_client.upload_file(file_name, BUCKET_NAME, f"01-bronze/{date}_{AP_ID.lower()}.json")
 
 __init__()
