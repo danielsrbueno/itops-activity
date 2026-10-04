@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-AP_ID="wirewall"
+AP_ID="firewall"
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 session = boto3.Session(
