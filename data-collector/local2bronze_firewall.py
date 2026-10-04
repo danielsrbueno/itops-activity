@@ -4,6 +4,22 @@ import json
 import datetime
 import platform
 import subprocess
+import os
+import boto3
+from dotenv import load_dotenv
+
+load_dotenv()
+
+AP_ID="wirewall"
+BUCKET_NAME = os.getenv("BUCKET_NAME")
+
+session = boto3.Session(
+  aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+  aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+  aws_session_token=os.getenv("AWS_SESSION_TOKEN"),
+  region_name="us-east-1"
+)
+s3_client = session.client("s3")
 
 def __init__():
   # A função platform.system() está a fim de teste no ambiente de desenvolvimento (macOS), pois este sistema operacional recusa a permissão de certos comandos
@@ -45,7 +61,10 @@ def __init__():
     "created_at": date,
   }
   
-  with open(f"./data/{date}_firewall.json", "w") as file:
+  file_name = f"./data-01-bronze/{date}_{AP_ID.lower()}.json"
+  with open(file_name, "w") as file:
     json.dump(data, file, indent=2)
+  
+    s3_client.upload_file(file_name, BUCKET_NAME, f"01-bronze/{date}_{AP_ID.lower()}.json")
 
 __init__()
