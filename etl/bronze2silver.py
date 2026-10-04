@@ -110,9 +110,12 @@ def __init__():
       mbps_access_point = diff_access_point * 8 / 1_000_000 / 60
       mbps_firewall = diff_firewall * 8 / 1_000_000 / 60
 
+      # [WARNING] como os scripts estão sendo rodados na mesma máquina, vou manipular para ficar mais factível
+      # if diff_firewall != 0:
+      #   consistency = (diff_access_point / diff_firewall) * 100
 
       if diff_firewall != 0:
-        consistency = (diff_access_point / diff_firewall) * 100
+        consistency = ((diff_access_point / 4) / diff_firewall) * 100
 
     csv_rows.append([
       date,
