@@ -17,8 +17,15 @@ session = boto3.Session(
 s3_client = session.client("s3")
 
 def __init__():
-  res_chk = s3_client.get_object(Bucket=BUCKET_NAME, Key="01-bronze/checkpoint.json")
-  last_read = json.loads(res_chk["Body"].read())
+  last_read = {
+    "date": ""
+  }
+  
+  try:
+    res_chk = s3_client.get_object(Bucket=BUCKET_NAME, Key="01-bronze/checkpoint.json")
+    last_read["date"] = json.loads(res_chk["Body"].read())["date"]
+  except:
+    last_read["date"] = "0"
 
   response = s3_client.list_objects_v2(
     Bucket=BUCKET_NAME,
@@ -113,7 +120,7 @@ def __init__():
     json.dump({
       "date": files_to_transform[-1].split("_")[0] + "_" + files_to_transform[-1].split("_")[1]
     }, file, indent=2)
-    
+
   s3_client.upload_file("./data-01-bronze/checkpoint.json", BUCKET_NAME, "01-bronze/checkpoint.json")
 
   date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
