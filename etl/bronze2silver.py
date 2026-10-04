@@ -53,7 +53,7 @@ def __init__():
   files_to_transform = [
     file 
     for file in all_files 
-    if file.split("/")[-1].split("_a")[0].split("_f")[0] > last_read["date"]
+    if getFileDate(file) > last_read["date"]
   ]
 
   dates = []
@@ -168,5 +168,9 @@ def getDeviceType (file_name: str):
   if device.startswith("wirewall") or device.startswith("firewall"):
     return "FIREWALL"
   return None
+
+def getFileDate(file_name: str):
+  parts = file_name.split("_")
+  return parts[0] + "_" + parts[1]
 
 __init__()
