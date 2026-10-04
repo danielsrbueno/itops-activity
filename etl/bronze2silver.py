@@ -18,12 +18,16 @@ s3_client = session.client("s3")
 
 def __init__():
   last_read = {
-    "date": ""
+    "date": "0", "bytes_access_point": None, "bytes_firewall": None
   }
   
   try:
     res_chk = s3_client.get_object(Bucket=BUCKET_NAME, Key="01-bronze/checkpoint.json")
-    last_read["date"] = json.loads(res_chk["Body"].read())["date"]
+    chk = json.loads(res_chk["Body"].read())
+    last_read["date"] = chk["date"]
+    last_read["bytes_access_point"] = chk.get("bytes_access_point")
+    last_read["bytes_firewall"] = chk.get("bytes_firewall")
+
   except:
     last_read["date"] = "0"
 
@@ -61,8 +65,8 @@ def __init__():
   if len(files_to_transform) <= 1:
     return print("Não há dados a serem transformados.")
   
-  old_bytes_access_point = None
-  old_bytes_firewall = None
+  old_bytes_access_point = last_read["bytes_access_point"]
+  old_bytes_firewall = last_read["bytes_firewall"]
 
   for date in dates:
     bytes_access_point = 0
@@ -130,7 +134,9 @@ def __init__():
 
   with open("./data-01-bronze/checkpoint.json", "w") as file:
     json.dump({
-      "date": files_to_transform[-1].split("_")[0] + "_" + files_to_transform[-1].split("_")[1]
+      "date": files_to_transform[-1].split("_")[0] + "_" + files_to_transform[-1].split("_")[1],
+      "bytes_access_point": old_bytes_access_point,
+      "bytes_firewall": old_bytes_firewall
     }, file, indent=2)
 
   s3_client.upload_file("./data-01-bronze/checkpoint.json", BUCKET_NAME, "01-bronze/checkpoint.json")
