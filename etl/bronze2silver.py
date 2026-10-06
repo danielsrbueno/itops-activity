@@ -165,7 +165,7 @@ def getDeviceType (file_name: str):
   device = file_name.split("_")[2]
   if device.startswith("ap"):
     return "ACCESS_POINT"
-  if device.startswith("wirewall") or device.startswith("firewall"):
+  if device.startswith("firewall"):
     return "FIREWALL"
   return None
 
