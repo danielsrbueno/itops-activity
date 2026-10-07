@@ -1,3 +1,4 @@
+import copy
 import csv
 import datetime
 import json
@@ -18,6 +19,20 @@ session = boto3.Session(
 s3_client = session.client("s3")
 
 def __init__():
+  last_read_data = {
+    "last_file_read": "", "last_bytes": None
+  }
+
+  try:
+    res_chk = s3_client.get_object(Bucket=BUCKET_NAME, Key="03-gold/checkpoint.json")
+    chk = json.loads(res_chk["Body"].read())
+    last_read_data["last_file_read"] = chk.get("last_file_read", "")
+    last_read_data["last_bytes"] = chk.get("last_bytes")
+  
+  except:
+    pass
+
+  print(last_read_data)
   try:
     response = s3_client.list_objects_v2(
       Bucket=BUCKET_NAME,
@@ -34,8 +49,13 @@ def __init__():
   csv_rows = [["created_at", "id", "priority", "mbps_sent", "mbps_recv", "active_conn", "description"]]
 
   all_files = [
-    file["Key"].split("/")[-1] for file in response.get("Contents", []) if file["Key"].split("/")[-1] not in ["", "checkpoint.json"]
+    file["Key"].split("/")[-1] for file in response.get("Contents", []) if file["Key"].split("/")[-1] not in ["", "checkpoint.json"] and file["Key"].split("/")[-1] > last_read_data["last_file_read"]
   ]
+
+  if len(all_files) == 0:
+    return print("Não há novos dados para transformar.")
+
+  all_files.sort()
 
   ids = [
     file.split("_")[-1].split(".")[0].upper() for file in all_files
@@ -44,9 +64,29 @@ def __init__():
   ids = list(set(ids))
   ids.sort()
 
+  initial_last_read = [
+    {
+      "bytes_sent": 0, 
+      "bytes_recv": 0
+    }
+    for _ in range(0, len(ids))
+  ]
+
+  if last_read_data["last_bytes"] is not None:
+    initial_last_read = [
+      last_read_data["last_bytes"].get(id, {
+        "bytes_sent": 0, "bytes_recv": 0
+      })
+      for id in ids
+    ]
+
+  last_read = copy.deepcopy(initial_last_read)
+
   for id in ids:
     if id == "FIREWALL":
       continue
+
+    idx = ids.index(id)
 
     files_to_read = [
       file
@@ -55,7 +95,8 @@ def __init__():
     mbps_sent_mean = 0
     mbps_recv_mean = 0
     active_conn_mean = 0
-    for file_name in files_to_read:
+    count = 0
+    for i, file_name in enumerate(files_to_read):
       try:
         file = s3_client.get_object(
           Bucket=BUCKET_NAME,
@@ -67,17 +108,30 @@ def __init__():
 
       data = json.loads(file["Body"].read())
 
-      if data.get("bytes_sent", 0) == 0 or data.get("bytes_recv", 0) == 0:
+      sent_diff = data.get("bytes_sent", 0) - last_read[idx]["bytes_sent"]
+      recv_diff = data.get("bytes_recv", 0) - last_read[idx]["bytes_recv"]
+      first_read = last_read[idx]["bytes_sent"] == 0 and i == 0
+
+      last_read[idx] = {
+        "bytes_sent": data.get("bytes_sent", 0),
+        "bytes_recv": data.get("bytes_recv", 0)
+      }
+
+      if first_read:
         continue
 
-      mbps_sent_mean += data.get("bytes_sent", 0)
-      mbps_recv_mean += data.get("bytes_recv", 0)
+      mbps_sent_mean += sent_diff
+      mbps_recv_mean += recv_diff
       active_conn_mean += data.get("active_conn", 0)
+      count += 1
       print(active_conn_mean)
 
-    mbps_sent_mean = mbps_sent_mean / len(files_to_read)
-    mbps_recv_mean = mbps_recv_mean / len(files_to_read)
-    active_conn_mean = active_conn_mean / len(files_to_read)
+    if count == 0:
+      continue
+
+    mbps_sent_mean = mbps_sent_mean / count
+    mbps_recv_mean = mbps_recv_mean / count
+    active_conn_mean = active_conn_mean / count
     print(active_conn_mean)
 
     mbps_sent_mean = mbps_sent_mean * 8 / 1_000_000 / (60 * MINUTES)
@@ -139,9 +193,14 @@ def __init__():
   csv_rows = [["created_at", "id", "rating", "mbps_sent", "mbps_recv", "cpu", "ram", "description", "ranking"]]
   id_ranking = []
   rankings = []
+
+  last_read = copy.deepcopy(initial_last_read)
+
   for id in ids:
     if id == "FIREWALL":
       continue
+
+    idx = ids.index(id)
 
     files_to_read = [
       file
@@ -152,7 +211,8 @@ def __init__():
     mbps_recv_mean = 0
     cpu_mean = 0
     ram_mean = 0
-    for file_name in files_to_read:
+    count = 0
+    for i, file_name in enumerate(files_to_read):
       try:
         file = s3_client.get_object(
           Bucket=BUCKET_NAME,
@@ -164,21 +224,34 @@ def __init__():
 
       data = json.loads(file["Body"].read())
 
-      if data.get("bytes_sent", 0) == 0 or data.get("bytes_recv", 0) == 0:
+      sent_diff = data.get("bytes_sent", 0) - last_read[idx]["bytes_sent"]
+      recv_diff = data.get("bytes_recv", 0) - last_read[idx]["bytes_recv"]
+      first_read = last_read[idx]["bytes_sent"] == 0 and i == 0
+
+      last_read[idx] = {
+        "bytes_sent": data.get("bytes_sent", 0),
+        "bytes_recv": data.get("bytes_recv", 0)
+      }
+
+      if first_read:
         continue
 
-      mbps_sent_mean += data.get("bytes_sent", 0)
-      mbps_recv_mean += data.get("bytes_recv", 0)
+      mbps_sent_mean += sent_diff
+      mbps_recv_mean += recv_diff
       cpu_mean += data.get("cpu_percent", 0)
       ram_mean += data.get("ram_percent", 0)
+      count += 1
 
-    mbps_sent_mean = mbps_sent_mean / len(files_to_read)
-    mbps_recv_mean = mbps_recv_mean / len(files_to_read)
-    cpu_mean = cpu_mean / len(files_to_read)
-    ram_mean = ram_mean / len(files_to_read)
+    if count == 0:
+      continue
 
-    mbps_sent_mean = mbps_sent_mean * 8 / 1_000_000 / (60 * MINUTES)
-    mbps_recv_mean = mbps_recv_mean * 8 / 1_000_000 / (60 * MINUTES)
+    mbps_sent_mean = mbps_sent_mean / count
+    mbps_recv_mean = mbps_recv_mean / count
+    cpu_mean = cpu_mean / count
+    ram_mean = ram_mean / count
+
+    mbps_sent_mean = mbps_sent_mean * 8 / 1_000_000 / 60
+    mbps_recv_mean = mbps_recv_mean * 8 / 1_000_000 / 60
 
     eficiency = (mbps_sent_mean * mbps_recv_mean) / (cpu_mean * ram_mean)
     id_ranking.append(id)
@@ -232,5 +305,17 @@ def __init__():
       csv.writer(csvfile, delimiter=";", lineterminator='\n').writerow(row) 
   
     s3_client.upload_file(file_name, BUCKET_NAME, f"03-gold/{date}-efficiency.csv")    
+
+  print(ids)
+  print(last_read)
+
+  with open("./data-03-gold/checkpoint.json", "w") as file:
+    checkpoint = {
+      "last_file_read": all_files[-1],
+      "last_bytes": dict(zip(ids, last_read))
+    }
+    json.dump(checkpoint, file, indent=2)
+
+  s3_client.upload_file("./data-03-gold/checkpoint.json", BUCKET_NAME, "03-gold/checkpoint.json")
   
 __init__()
