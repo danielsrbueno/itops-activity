@@ -16,6 +16,14 @@ session = boto3.Session(
 )
 s3_client = session.client("s3")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+SILVER_DIR = os.path.join(BASE_DIR, "data-02-silver")
+BRONZE_DIR = os.path.join(BASE_DIR, "data-01-bronze")
+
+os.makedirs(SILVER_DIR, exist_ok=True)
+os.makedirs(BRONZE_DIR, exist_ok=True)
+
 def __init__():
   last_read_data = {
     "last_file_read": "", "last_bytes": None
@@ -158,7 +166,8 @@ def __init__():
   print(ids)
   print(last_read)
   date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-  file_name = f"./data-02-silver/{date}.csv"
+  file_name = os.path.join(SILVER_DIR, f"{date}.csv")
+
   with open(file_name, "w") as csvfile:
     for row in csv_rows:
       csv.writer(csvfile, delimiter=";", lineterminator='\n').writerow(row) 
