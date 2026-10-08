@@ -10,6 +10,16 @@ load_dotenv()
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 MINUTES = 6
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+SILVER_DIR = os.path.join(BASE_DIR, "data-02-silver")
+BRONZE_DIR = os.path.join(BASE_DIR, "data-01-bronze")
+GOLD_DIR = os.path.join(BASE_DIR, "data-03-gold")
+
+os.makedirs(SILVER_DIR, exist_ok=True)
+os.makedirs(BRONZE_DIR, exist_ok=True)
+os.makedirs(GOLD_DIR, exist_ok=True)
+
 session = boto3.Session(
   aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
   aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
@@ -179,7 +189,7 @@ def __init__():
       ])
 
   date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-  file_name = f"./data-03-gold/{date}-deadzones.csv"
+  file_name = os.path.join(GOLD_DIR, f"{date}-deadzones.csv")
   with open(file_name, "w") as csvfile:
     for row in csv_rows:
       csv.writer(csvfile, delimiter=";", lineterminator='\n').writerow(row) 
@@ -299,7 +309,7 @@ def __init__():
         break
 
   date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-  file_name = f"./data-03-gold/{date}-efficiency.csv"
+  file_name = os.path.join(GOLD_DIR, f"{date}-efficiency.csv")
   with open(file_name, "w") as csvfile:
     for row in csv_rows:
       csv.writer(csvfile, delimiter=";", lineterminator='\n').writerow(row) 
