@@ -194,7 +194,7 @@ def __init__():
     for row in csv_rows:
       csv.writer(csvfile, delimiter=";", lineterminator='\n').writerow(row) 
   
-    s3_client.upload_file(file_name, BUCKET_NAME, f"03-gold/{date}-deadzones.csv")
+  s3_client.upload_file(file_name, BUCKET_NAME, f"03-gold/{date}-deadzones.csv")
 
   # Relatório de Eficiência de Hardware: 
   # Um ranking das antenas que possuem a maior relação Tráfego de Rede / Consumo de CPU. 
@@ -314,7 +314,7 @@ def __init__():
     for row in csv_rows:
       csv.writer(csvfile, delimiter=";", lineterminator='\n').writerow(row) 
   
-    s3_client.upload_file(file_name, BUCKET_NAME, f"03-gold/{date}-efficiency.csv")    
+  s3_client.upload_file(file_name, BUCKET_NAME, f"03-gold/{date}-efficiency.csv")    
 
   print(ids)
   print(last_read)

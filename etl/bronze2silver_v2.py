@@ -172,7 +172,7 @@ def __init__():
     for row in csv_rows:
       csv.writer(csvfile, delimiter=";", lineterminator='\n').writerow(row) 
   
-    s3_client.upload_file(file_name, BUCKET_NAME, f"02-silver/{date}.csv")
+  s3_client.upload_file(file_name, BUCKET_NAME, f"02-silver/{date}.csv")
 
   with open("./data-01-bronze/checkpoint.json", "w") as file:
     checkpoint = {
