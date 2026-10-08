@@ -7,8 +7,6 @@ import json
 import datetime
 
 load_dotenv()
-
-AP_ID="AP001"
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 session = boto3.Session(
@@ -19,7 +17,7 @@ session = boto3.Session(
 )
 s3_client = session.client("s3")
 
-def __init__():
+def __init__(AP_ID: str):
   network_data = psutil.net_io_counters()
   bytes_sent = network_data.bytes_sent
   bytes_recv = network_data.bytes_recv
@@ -46,4 +44,4 @@ def __init__():
 
   s3_client.upload_file(file_name, BUCKET_NAME, f"01-bronze/{date}_{AP_ID.lower()}.json")
 
-__init__()
+# __init__()
